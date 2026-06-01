@@ -34,17 +34,22 @@ function closeGame() {
 }
 
 function handleMessage(event) {
-  if (event.data === 'launch-game') {
-    openGame();
-  }
+  if (event.data === 'launch-game') openGame();
+  if (event.data === 'exit-game') closeGame();
+}
+
+function handleKeydown(event) {
+  if (event.key === 'Escape' && gameOpen.value) closeGame();
 }
 
 onMounted(() => {
   window.addEventListener('message', handleMessage);
+  window.addEventListener('keydown', handleKeydown);
 });
 
 onUnmounted(() => {
   window.removeEventListener('message', handleMessage);
+  window.removeEventListener('keydown', handleKeydown);
 });
 </script>
 

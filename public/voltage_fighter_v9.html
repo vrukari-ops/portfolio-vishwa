@@ -7,7 +7,7 @@
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: #000; overflow: hidden; touch-action: none; font-family: monospace; width: 100vw; height: 100vh; }
-#wrap { width: 700px; position: absolute; top: 0; left: 50%; transform-origin: top left; }
+#wrap { width: 700px; position: absolute; top: 0; left: 0; transform-origin: top left; }
 #hud { background: #0a0005; border: 2px solid #ff6600; border-bottom: none; padding: 8px 12px; display: flex; align-items: center; gap: 12px; }
 .hcol { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .hlabel { font-size: 9px; color: #ff6600; letter-spacing: 1px; font-weight: bold; }
@@ -1106,6 +1106,21 @@ function drawEnemy(e) {
 // ============================================================
 // OVERLAY
 // ============================================================
+// Preload splash & win images
+var imgSplash = new Image(); imgSplash.src = '/vf-splash.png';
+var imgComplete = new Image(); imgComplete.src = '/vf-complete.png';
+
+function drawImageFit(img, alpha) {
+  if (!img.complete || !img.naturalWidth) return;
+  ctx.globalAlpha = alpha !== undefined ? alpha : 1;
+  var iw = img.naturalWidth, ih = img.naturalHeight;
+  var scale = Math.min(W / iw, H / ih);
+  var dw = iw * scale, dh = ih * scale;
+  var dx = (W - dw) / 2, dy = (H - dh) / 2;
+  ctx.drawImage(img, dx, dy, dw, dh);
+  ctx.globalAlpha = 1;
+}
+
 function drawOverlay() {
   function txt(t,y2,col,sz) {
     ctx.fillStyle=col||'#ffcc00';
@@ -1115,11 +1130,11 @@ function drawOverlay() {
     ctx.textAlign='left';
   }
   if(gs==='idle') {
-    ctx.fillStyle='rgba(0,0,10,0.84)'; ctx.fillRect(0,0,W,H);
-    txt('VOLTAGE FIGHTER',H/2-90,'#ff6600',14);
-    var lines=['ARROWS / A D : MOVE','SPACE : JUMP','SHIFT : HIT','CTRL+SHIFT : POWER KICK','E : LIGHTNING (FULL ENERGY + RED BULL)','R : USE RED BULL','USE 3 RED BULLS = +1 LIFE'];
-    for(var i=0;i<lines.length;i++) { ctx.fillStyle='#ffcc44'; ctx.font='bold 8px monospace'; ctx.textAlign='center'; ctx.fillText(lines[i],W/2,H/2-38+i*18); }
-    txt('PRESS ENTER TO FIGHT',H/2+100,'#ff6600',9);
+    ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillRect(0,0,W,H);
+    drawImageFit(imgSplash);
+    // subtle prompt at bottom
+    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(0,H-28,W,28);
+    txt('PRESS ENTER  /  TAP START TO FIGHT', H-10, '#ff6600', 8);
   } else if(gs==='levelup') {
     ctx.fillStyle='rgba(0,0,10,0.88)'; ctx.fillRect(0,0,W,H);
     txt('LEVEL '+(level-1)+' CLEAR!',H/2-40,'#ffcc00',12);
@@ -1134,12 +1149,10 @@ function drawOverlay() {
     ctx.fillText('LEVEL '+level+' | SCORE: '+score,W/2,H/2-4);
     ctx.fillStyle='#888'; ctx.fillText('PRESS ENTER TO TRY AGAIN',W/2,H/2+30); ctx.textAlign='left';
   } else if(gs==='win') {
-    ctx.fillStyle='rgba(0,18,0,0.9)'; ctx.fillRect(0,0,W,H);
-    txt('CRISIS AVERTED!',H/2-40,'#00ff44',13);
-    ctx.font='bold 8px monospace'; ctx.fillStyle='#88ff88'; ctx.textAlign='center';
-    ctx.fillText('FINAL SCORE: '+score,W/2,H/2-6);
-    ctx.fillText('YOU ARE THE VOLTAGE CHAMPION',W/2,H/2+18);
-    ctx.fillStyle='#555'; ctx.fillText('PRESS ENTER TO PLAY AGAIN',W/2,H/2+46); ctx.textAlign='left';
+    ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillRect(0,0,W,H);
+    drawImageFit(imgComplete);
+    ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fillRect(0,H-28,W,28);
+    txt('SCORE: '+score+'   |   PRESS ENTER TO PLAY AGAIN', H-10, '#ffcc00', 8);
   }
 }
 
@@ -1303,6 +1316,10 @@ function loop(ts) {
 // ============================================================
 document.addEventListener('keydown',function(e){
   keys[e.key]=true;
+  if(e.key==='Escape') {
+    if(window.parent && window.parent !== window) window.parent.postMessage('exit-game','*');
+    return;
+  }
   if(e.key==='Enter') handleStart();
   if(e.key===' ') { e.preventDefault(); doJump(); }
   if(e.key==='Shift' && !e.ctrlKey && !e.metaKey) doHit();
@@ -1352,12 +1369,13 @@ function scaleGame() {
   var availH = window.innerHeight;
   var naturalH = wrap.offsetHeight || 650;
   var scale = Math.min(availW / 700, availH / naturalH);
+  // Position by explicit left/top so there's no transform-origin confusion
   var scaledW = 700 * scale;
   var scaledH = naturalH * scale;
-  // translate(-50%, 0) then scale from top-left — centres horizontally
-  var offsetX = -350; // half of 700 (pre-scale)
-  var offsetY = Math.max(0, (availH - scaledH) / 2 / scale); // vertical centering in pre-scale units
-  wrap.style.transform = 'translateX(-50%) translateY(' + offsetY + 'px) scale(' + scale + ')';
+  wrap.style.left   = Math.max(0, (availW - scaledW) / 2) + 'px';
+  wrap.style.top    = Math.max(0, (availH - scaledH) / 2) + 'px';
+  wrap.style.transformOrigin = 'top left';
+  wrap.style.transform = 'scale(' + scale + ')';
 }
 
 function setupMobileControls() {
