@@ -181,7 +181,11 @@ function startTextIntro(){
       intro.style.opacity = '1';
       intro.classList.remove('active');
       intro.style.display = 'none';
-      launchArcade();
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage('launch-game', '*');
+      } else {
+        launchArcade();
+      }
     }, 700);
   }, phase5Start);
 }
@@ -1123,12 +1127,7 @@ const hmEl  = document.getElementById('human-mode');
 const arcEl = document.getElementById('arcade-mode');
 
 document.getElementById('play-btn').addEventListener('click', () => {
-  // Signal parent Vue app to launch the game fullscreen
-  if (window.parent && window.parent !== window) {
-    window.parent.postMessage('launch-game', '*');
-  } else {
-    startTextIntro();
-  }
+  startTextIntro();
 });
 
 function launchArcade(){
@@ -1452,7 +1451,11 @@ function startTextIntro(){
       intro.style.opacity = '1';
       intro.classList.remove('active');
       intro.style.display = 'none';
-      launchArcade();
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage('launch-game', '*');
+      } else {
+        launchArcade();
+      }
     }, 700);
   }, phase5Start);
 }

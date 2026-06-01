@@ -6,7 +6,7 @@
     <div v-if="gameOpen" id="game-overlay">
       <iframe
         id="game-frame"
-        src="/voltage_fighter.html"
+        src="/voltage_fighter_v9.html"
         title="Voltage Fighter Game"
         allowfullscreen
       ></iframe>
