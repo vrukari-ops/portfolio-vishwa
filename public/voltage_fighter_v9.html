@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Voltage Fighter</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: monospace; }
-#wrap { width: 700px; }
+body { background: #000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; font-family: monospace; overflow: hidden; touch-action: none; }
+#wrap { width: 700px; transform-origin: top center; flex-shrink: 0; }
 #hud { background: #0a0005; border: 2px solid #ff6600; border-bottom: none; padding: 8px 12px; display: flex; align-items: center; gap: 12px; }
 .hcol { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .hlabel { font-size: 9px; color: #ff6600; letter-spacing: 1px; font-weight: bold; }
@@ -24,11 +25,63 @@ body { background: #000; display: flex; flex-direction: column; align-items: cen
 #enfill { height: 100%; background: #1a55cc; transition: width 0.1s; }
 #enfill.full { background: #00ff88; }
 canvas { display: block; border: 2px solid #ff6600; border-top: none; }
+/* Desktop buttons */
 #btns { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; justify-content: center; }
 #btns button { padding: 7px 11px; font-size: 9px; font-family: monospace; background: #080008; border: 2px solid #ff6600; color: #ffcc00; cursor: pointer; font-weight: bold; }
 #btns button:active { transform: translateY(1px); }
 #bblast { border-color: #00ff88 !important; color: #00ff88 !important; display: none; }
 #msgbar { text-align: center; font-size: 9px; color: #ff8800; margin-top: 5px; min-height: 14px; font-weight: bold; }
+/* Mobile gamepad */
+#mobile-pad {
+  display: none;
+  width: 700px;
+  background: #060006;
+  border: 2px solid #ff6600;
+  border-top: none;
+  padding: 10px 12px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+#pad-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#pad-row-util {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.tb {
+  display: flex; align-items: center; justify-content: center;
+  background: #0a000a;
+  border: 2px solid #ff6600;
+  color: #ffcc00;
+  font-family: monospace;
+  font-weight: bold;
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.08s;
+}
+.tb:active, .tb.pressed { background: #ff6600; color: #000; }
+.tb-move { width: 78px; height: 68px; font-size: 24px; }
+.tb-move + .tb-move { margin-left: 8px; }
+.tb-act { width: 72px; height: 62px; font-size: 12px; text-align: center; line-height: 1.2; }
+.tb-act + .tb-act { margin-left: 8px; }
+.tb-jump { border-color: #ffcc00; color: #ffcc00; }
+.tb-hit  { border-color: #ff3300; color: #ff3300; }
+.tb-pow  { border-color: #ff8800; color: #ff8800; }
+.tb-util { width: 90px; height: 44px; font-size: 9px; letter-spacing: 1px; }
+.tb-rb   { border-color: #3399ff; color: #3399ff; }
+.tb-blast{ border-color: #00ff88; color: #00ff88; display: none; }
+.tb-start{ border-color: #ffcc00; color: #ffcc00; }
+#pad-dpad { display: flex; }
+#pad-actions { display: flex; }
 </style>
 </head>
 <body>
@@ -60,6 +113,25 @@ canvas { display: block; border: 2px solid #ff6600; border-top: none; }
     </div>
   </div>
   <canvas id="cv" width="700" height="420"></canvas>
+  <!-- Mobile gamepad -->
+  <div id="mobile-pad">
+    <div id="pad-row">
+      <div id="pad-dpad">
+        <div class="tb tb-move" id="mbL">◀</div>
+        <div class="tb tb-move" id="mbR" style="margin-left:8px">▶</div>
+      </div>
+      <div id="pad-actions">
+        <div class="tb tb-act tb-jump" id="mbJ">JUMP</div>
+        <div class="tb tb-act tb-hit"  id="mbH" style="margin-left:8px">HIT</div>
+        <div class="tb tb-act tb-pow"  id="mbP" style="margin-left:8px">POWER</div>
+      </div>
+    </div>
+    <div id="pad-row-util">
+      <div class="tb tb-util tb-rb"    id="mbRB">RED BULL [R]</div>
+      <div class="tb tb-util tb-blast" id="mbBlast">⚡ BLAST</div>
+      <div class="tb tb-util tb-start" id="mbStart">▶ START</div>
+    </div>
+  </div>
   <div id="btns">
     <button id="bL">◀ LEFT</button>
     <button id="bR">RIGHT ▶</button>
@@ -1266,6 +1338,113 @@ function handleStart() {
   gs='playing'; initLevel();
   setMsg('DEFEAT ALL ENEMIES — THEN JUMP TO THE DOOR!');
 }
+
+// ============================================================
+// RESPONSIVE SCALING
+// ============================================================
+var wrap = document.getElementById('wrap');
+var mobilePad = document.getElementById('mobile-pad');
+var desktopBtns = document.getElementById('btns');
+var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+function scaleGame() {
+  var availW = window.innerWidth;
+  var availH = window.innerHeight;
+  var scale = Math.min(availW / 700, availH / (wrap.scrollHeight || 650));
+  if (availW >= 700 && availH >= 650) scale = 1; // native size on large screens
+  wrap.style.transform = 'scale(' + scale + ')';
+  wrap.style.transformOrigin = 'top center';
+  document.body.style.paddingTop = '0';
+}
+
+function setupMobileControls() {
+  var small = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || window.innerWidth < 900;
+  mobilePad.style.display = small ? 'block' : 'none';
+  desktopBtns.style.display = small ? 'none' : 'flex';
+  setTimeout(scaleGame, 10); // after layout
+}
+
+window.addEventListener('resize', setupMobileControls);
+setupMobileControls();
+
+// ============================================================
+// MOBILE GAMEPAD BUTTONS
+// ============================================================
+function mbPress(id, keyName) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  function on()  { el.classList.add('pressed');    if (keyName) keys[keyName] = true; }
+  function off() { el.classList.remove('pressed'); if (keyName) keys[keyName] = false; }
+  el.addEventListener('touchstart',  function(e){ e.preventDefault(); on(); },  { passive:false });
+  el.addEventListener('touchend',    function(e){ e.preventDefault(); off(); }, { passive:false });
+  el.addEventListener('touchcancel', function(e){ off(); }, { passive:false });
+  el.addEventListener('mousedown',   on);
+  el.addEventListener('mouseup',     off);
+  el.addEventListener('mouseleave',  off);
+}
+mbPress('mbL', 'ArrowLeft');
+mbPress('mbR', 'ArrowRight');
+
+function mbAction(id, fn) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('touchstart', function(e){ e.preventDefault(); el.classList.add('pressed'); fn(); }, { passive:false });
+  el.addEventListener('touchend',   function(e){ e.preventDefault(); el.classList.remove('pressed'); }, { passive:false });
+  el.addEventListener('mousedown',  function(){ el.classList.add('pressed'); fn(); });
+  el.addEventListener('mouseup',    function(){ el.classList.remove('pressed'); });
+}
+mbAction('mbJ',     doJump);
+mbAction('mbH',     doHit);
+mbAction('mbP',     doPower);
+mbAction('mbRB',    doRedBull);
+mbAction('mbBlast', doBlast);
+mbAction('mbStart', handleStart);
+
+// Keep blast button visibility in sync with energy
+var _origUpdateHUD = updateHUD;
+updateHUD = function() {
+  _origUpdateHUD();
+  var blastOk = energy >= 100 && rbCount >= 1;
+  var mb = document.getElementById('mbBlast');
+  if (mb) mb.style.display = blastOk ? 'flex' : 'none';
+};
+
+// ============================================================
+// SWIPE / TAP ON CANVAS
+// ============================================================
+var _swX = 0, _swY = 0, _swT = 0, _swDir = null, _swActive = false;
+
+cv.addEventListener('touchstart', function(ev) {
+  ev.preventDefault();
+  var t = ev.touches[0];
+  _swX = t.clientX; _swY = t.clientY; _swT = Date.now();
+  _swDir = null; _swActive = true;
+}, { passive: false });
+
+cv.addEventListener('touchmove', function(ev) {
+  ev.preventDefault();
+  if (!_swActive) return;
+  var t = ev.touches[0];
+  var dx = t.clientX - _swX, dy = t.clientY - _swY;
+  if (!_swDir && (Math.abs(dx) > 20 || Math.abs(dy) > 20)) {
+    if (dy < -Math.abs(dx) * 0.6) {
+      _swDir = 'up';
+    } else if (Math.abs(dx) > Math.abs(dy) * 0.6) {
+      _swDir = dx > 0 ? 'right' : 'left';
+    }
+  }
+  if (_swDir === 'right') { keys['ArrowLeft'] = false; keys['ArrowRight'] = true; }
+  if (_swDir === 'left')  { keys['ArrowRight'] = false; keys['ArrowLeft'] = true; }
+}, { passive: false });
+
+cv.addEventListener('touchend', function(ev) {
+  ev.preventDefault();
+  keys['ArrowLeft'] = false; keys['ArrowRight'] = false;
+  var dt = Date.now() - _swT;
+  if (_swDir === 'up') doJump();
+  else if (!_swDir && dt < 250) doHit(); // tap = hit
+  _swActive = false; _swDir = null;
+}, { passive: false });
 
 requestAnimationFrame(loop);
 </script>
