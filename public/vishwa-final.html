@@ -328,10 +328,12 @@ body.arcade #cursor-dot{background:var(--cy);}
 /* MARQUEE */
 #marquee-sec{padding:64px 0 40px;background:rgba(8,8,8,0.15);overflow:hidden;}
 .m-track{overflow:hidden;margin-bottom:12px;}
-.m-row{display:flex;gap:12px;width:max-content;}
-.m-fwd{animation:mL 28s linear infinite;}
-.m-rev{animation:mR 32s linear infinite;}
+.m-row{display:flex;gap:12px;width:max-content;will-change:transform;-webkit-transform:translateZ(0);transform:translateZ(0);}
+.m-fwd{-webkit-animation:mL 28s linear infinite;animation:mL 28s linear infinite;}
+.m-rev{-webkit-animation:mR 32s linear infinite;animation:mR 32s linear infinite;}
+@-webkit-keyframes mL{from{-webkit-transform:translateX(0);transform:translateX(0)}to{-webkit-transform:translateX(-50%);transform:translateX(-50%)}}
 @keyframes mL{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@-webkit-keyframes mR{from{-webkit-transform:translateX(-50%);transform:translateX(-50%)}to{-webkit-transform:translateX(0);transform:translateX(0)}}
 @keyframes mR{from{transform:translateX(-50%)}to{transform:translateX(0)}}
 .m-tile{flex-shrink:0;padding:10px 28px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-family:'Bebas Neue',sans-serif;font-size:clamp(13px,1.4vw,19px);letter-spacing:4px;color:rgba(255,255,255,0.2);text-transform:uppercase;white-space:nowrap;transition:color .25s,border-color .25s,background .25s;}
 .m-tile:hover{color:var(--or);border-color:rgba(232,80,2,0.5);}

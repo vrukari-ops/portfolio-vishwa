@@ -6,8 +6,8 @@
 <title>Voltage Fighter</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #000; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 100vh; font-family: monospace; overflow: hidden; touch-action: none; }
-#wrap { width: 700px; transform-origin: top center; flex-shrink: 0; }
+body { background: #000; overflow: hidden; touch-action: none; font-family: monospace; width: 100vw; height: 100vh; }
+#wrap { width: 700px; position: absolute; top: 0; left: 50%; transform-origin: top left; }
 #hud { background: #0a0005; border: 2px solid #ff6600; border-bottom: none; padding: 8px 12px; display: flex; align-items: center; gap: 12px; }
 .hcol { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .hlabel { font-size: 9px; color: #ff6600; letter-spacing: 1px; font-weight: bold; }
@@ -1350,11 +1350,14 @@ var isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
 function scaleGame() {
   var availW = window.innerWidth;
   var availH = window.innerHeight;
-  var scale = Math.min(availW / 700, availH / (wrap.scrollHeight || 650));
-  if (availW >= 700 && availH >= 650) scale = 1; // native size on large screens
-  wrap.style.transform = 'scale(' + scale + ')';
-  wrap.style.transformOrigin = 'top center';
-  document.body.style.paddingTop = '0';
+  var naturalH = wrap.offsetHeight || 650;
+  var scale = Math.min(availW / 700, availH / naturalH);
+  var scaledW = 700 * scale;
+  var scaledH = naturalH * scale;
+  // translate(-50%, 0) then scale from top-left — centres horizontally
+  var offsetX = -350; // half of 700 (pre-scale)
+  var offsetY = Math.max(0, (availH - scaledH) / 2 / scale); // vertical centering in pre-scale units
+  wrap.style.transform = 'translateX(-50%) translateY(' + offsetY + 'px) scale(' + scale + ')';
 }
 
 function setupMobileControls() {
