@@ -21,9 +21,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useRoute } from 'vue-router';
 
+const route = useRoute();
 const gameOpen = ref(false);
+
+// Lock scroll on iframe routes AND Hundekari (which manages its own scroll hijack)
+const lockScroll = computed(() => ['Landing', 'Game', 'Hundekari', 'Enoia'].includes(route.name));
 
 function openGame() {
   gameOpen.value = true;
@@ -41,6 +46,10 @@ function handleMessage(event) {
 function handleKeydown(event) {
   if (event.key === 'Escape' && gameOpen.value) closeGame();
 }
+
+watch(lockScroll, (val) => {
+  document.documentElement.classList.toggle('lock-scroll', val);
+}, { immediate: true });
 
 onMounted(() => {
   window.addEventListener('message', handleMessage);
@@ -63,9 +72,12 @@ onUnmounted(() => {
 
 html, body, #app {
   width: 100%;
+  background: #080808;
+}
+/* Lock scroll only for iframe-based routes */
+html.lock-scroll, html.lock-scroll body, html.lock-scroll #app {
   height: 100%;
   overflow: hidden;
-  background: #080808;
 }
 
 /* ── Game Overlay ── */
